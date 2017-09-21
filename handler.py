@@ -20,6 +20,7 @@ def handle(neatline):
             for viewer in currentViewers:
                 viewerFound = False
                 for savedPerson in gHublist:
+                    print(viewer[0], savedPerson[0])
                     if viewer[0] == savedPerson[0]:
                         savedPerson[1] = viewer[2]
                         viewerFound = True
@@ -35,7 +36,7 @@ def handle(neatline):
         return "PING"
 
     # simple string handling
-    elif neatline[0] == "MESSAGE":
+    if neatline[0] == "MESSAGE":
         pass #TODO: maybe log, probably language filter
         return "Success"
     elif neatline[0] == "JOIN":
@@ -58,25 +59,31 @@ def handle(neatline):
     #the problem
     elif neatline[0] == "COMMAND":
         neatCommand = neatline[3].split(' ')
+        print(neatCommand)
         if neatCommand[0] == "gamble":
-            if type(neatCommand[1]) == int:
-                for viewer in currentViewers:
-                    if neatline[1] == viewer:
-                        if viewer[2] < neatCommand[1]:
-                            return "MSG: Je hebt maar " + str(viewer[2]) + " GHubbies!"
+            try:
+                neatCommand[1] = int(neatCommand[1])
+            except:
+                return ["MSG: Wel een getal invullen grapjas", neatline[2]]
+            for viewer in currentViewers:
+                if neatline[1] == viewer[0]:
+                    if viewer[2] < neatCommand[1]:
+                        return ["MSG: Je hebt maar " + str(viewer[2]) + " GHubbies!", neatline[2]]
+                    else:
+                        value = random.randint(1,100)
+                        if value < 66:
+                            viewer[2] -= neatCommand[1]
+                            return ["MSG: Helaas, je rolde " + str(value) + "! Je hebt nog " + str(viewer[2]) + " GHubbies!", neatline[2]]
+                        elif value == 100:
+                            viewer[2] += 2*neatCommand[1]
+                            return ["MSG: Wow, 100! Je hebt nu " + str(viewer[2]) + " GHubbies!", neatline[2]]
                         else:
-                            value = random.randint(1,100)
-                            if value < 66:
-                                viewer[1] -= neatCommand[1]
-                                return "MSG: Helaas! Je hebt nog " + str(viewer[2]) + " GHubbies!"
-                            elif value == 100:
-                                viewer[1] += 2*neatCommand[1]
-                                return "MSG: Wow, 100! Je hebt nu " + str(viewer[2]) + " GHubbies!"
-                            else:
-                                return "MSG: Gefeliciteerd! Je hebt nu " + str(viewer[2]) + " GHubbies!"
-                # TODO: handle the actual gamble
+                            viewer[2] += neatCommand[1]
+                            return ["MSG: Gefeliciteerd, je rolde " + str(value) + "! Je hebt nu " + str(viewer[2]) + " GHubbies!", neatline[2]]
+            return ["MSG: Even geduld, je kan zo pas gamblen!", neatline[2]]
         return "Success"
         # TODO: check command in a list of commands, then return appropriate text
+        # TODO: bonus, bonusall, points, bet, give, duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht
 
 
     #error catching

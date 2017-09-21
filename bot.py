@@ -4,36 +4,14 @@ import socket
 import converter
 import handler
 from time import time
-def chat(sock, msg):
+def chat(sock, msg, channel):
     """
     Send a chat message to the server.
     Keyword arguments:
     sock -- the socket over which to send the message
     msg  -- the message to be sent
     """
-    sock.send("PRIVMSG {} :{}".format(cfg.CHAN, msg).encode("utf-8"))
-
-def ban(sock, user):
-    """
-    Ban a user from the current channel.
-    Keyword arguments:
-    sock -- the socket over which to send the ban command
-    user -- the user to be banned
-    """
-    chat(sock, ".ban {}".format(user))
-
-def timeout(sock, user, secs=600):
-    """
-    Time out a user for a set period of time.
-    Keyword arguments:
-    sock -- the socket over which to send the timeout command
-    user -- the user to be timed out
-    secs -- the length of the timeout in seconds (default 600)
-    """
-    chat(sock, ".timeout {}".format(user, secs))
-
-
-# network functions go here
+    sock.send("PRIVMSG {} :{}\r\n".format(channel, msg).encode("utf-8"))
 
 s = socket.socket()
 s.connect((cfg.HOST, cfg.PORT))
@@ -43,7 +21,7 @@ s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
 s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
 for channel in cfg.CHAN:
     s.send("JOIN {}\r\n".format(channel).encode("utf-8"))
-
+chat(s, "HeyGuys", "#toddle_bot")
 lastChecked = time()
 while True:
     response = s.recv(4096).decode("utf-8").split("\n")
@@ -59,7 +37,8 @@ while True:
             s.send("PONG :tmi.twitch.tv \r\n".encode())
         elif done == "Success" or done == "?":
             pass
-        else:
+        elif "MSG" in done[0]:
+            chat(s, done[0][4:], done[1])
             pass # TODO: Betere error handling.
             #s.send(("PRIVMSG #toddle_bot :" + done + "\r\n").encode())
 
