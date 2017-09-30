@@ -1,12 +1,11 @@
 
-#TODO: FIX PING
 
 def convert(line):
     #Preventing crashes later on:
     if line == "":
         return("?")
 
-    line = line[1:].split(":")
+    line = line[1:].split(":", 1)
     roughText = line[0].split(" ")
     if roughText[0] == "ING":
         return("PING")

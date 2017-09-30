@@ -1,92 +1,106 @@
 import cfg
 import random
-currentViewers = [] # each person represented as ["name", "channel", #points]
+from Person import Person
+from Person import personFromString
+
+currentViewers = [] # each person represented as Persoonclass
 saveCounter = 0
 gHublist = [] # each person represented as ["name", #points]
 
 # neatline = (type, username, channel, [message])
-def handle(neatline):
 
+
+
+
+def handle(neatline):
 
     # constant string handling
     if neatline == "?":
-        return("?")
+        return "?"
     elif neatline == "DISTRIBUTE":
+        print("gHublist")
+        for person in gHublist:
+            print(person)
+        print("currentViewers")
+        for person in currentViewers:
+            print(person)
         for viewer in currentViewers:
-            viewer[2]+= 10
+            viewer.addPoints(10)
         cfg.SAVE += 1
         if cfg.SAVE == 5:
             cfg.SAVE = 0
-            for viewer in currentViewers:
-                viewerFound = False
-                for savedPerson in gHublist:
-                    print(viewer[0], savedPerson[0])
-                    if viewer[0] == savedPerson[0]:
-                        savedPerson[1] = viewer[2]
-                        viewerFound = True
-                    if viewerFound:
-                        break
-                if not viewerFound:
-                    gHublist.append([viewer[0], viewer[2]])
-        # TODO: write away gHublist to .txt
-        print(currentViewers)
-        print(gHublist)
+            # TODO: write away gHublist to .txt
         return "Success"
     elif neatline == "PING":
         return "PING"
 
     # simple string handling
-    if neatline[0] == "MESSAGE":
+    [messageType, username, channel] = neatline[:3]
+    if messageType == "MESSAGE":
         pass #TODO: maybe log, probably language filter
         return "Success"
-    elif neatline[0] == "JOIN":
-        viewerFound = False
-        for viewer in gHublist:
-            if viewer[0] == neatline[1]:
-                currentViewers.append([viewer[0], neatline[2], viewer[1]])
-                viewerFound = True
-            if viewerFound:
-                break
-        if not viewerFound:
-            currentViewers.append([neatline[1], neatline[2], 10])
+    elif messageType == "JOIN":
+        foundperson = findperson(username, currentViewers)
+        if foundperson == "notFound":
+            foundperson = findperson(username, gHublist)
+            if foundperson == "notFound":
+                newPerson = Person(username, channel)
+                currentViewers.append(newPerson)
+                gHublist.append(newPerson)
+                # TODO: adopt save to join multiple persons with same name
+            else:
+                currentViewers.append(foundperson)
+        else:
+            foundperson.channel = channel
         return "Success"
     elif neatline[0] == "PART":
+        # TODO: Fix
         try:
             currentViewers.remove(neatline[1])
             return "Success"
         except:
-            return "Err: Player " + neatline[1] + " not found!"
+            return "Err: Player " + username + " not found!"
     #the problem
-    elif neatline[0] == "COMMAND":
+    elif messageType == "COMMAND":
         neatCommand = neatline[3].split(' ')
-        print(neatCommand)
         if neatCommand[0] == "gamble":
             try:
                 neatCommand[1] = int(neatCommand[1])
             except:
-                return ["MSG: Wel een getal invullen grapjas", neatline[2]]
-            for viewer in currentViewers:
-                if neatline[1] == viewer[0]:
-                    if viewer[2] < neatCommand[1]:
-                        return ["MSG: Je hebt maar " + str(viewer[2]) + " GHubbies!", neatline[2]]
+                return ["MSG: Wel een getal invullen grapjas", channel]
+            foundperson = findperson(username, currentViewers)
+            if foundperson == "notFound":
+                return ["MSG: Even geduld, je kan zo pas gamblen!", channel]
+            else:
+                if foundperson.points < neatCommand[1]:
+                    return ["MSG: Je hebt maar " + str(foundperson.points) + " GHubbies!", channel]
+                else:
+                    value = random.randint(1,100)
+                    if value < 66:
+                        foundperson.points -= neatCommand[1]
+                        return ["MSG: Helaas, je rolde " + str(value) + "! Je hebt nog " + str(foundperson.points) + " GHubbies!", channel]
+                    elif value == 100:
+                        foundperson.points += 2*neatCommand[1]
+                        return ["MSG: Wow, 100! Je hebt nu " + str(foundperson.points) + " GHubbies!", neatline[2]]
                     else:
-                        value = random.randint(1,100)
-                        if value < 66:
-                            viewer[2] -= neatCommand[1]
-                            return ["MSG: Helaas, je rolde " + str(value) + "! Je hebt nog " + str(viewer[2]) + " GHubbies!", neatline[2]]
-                        elif value == 100:
-                            viewer[2] += 2*neatCommand[1]
-                            return ["MSG: Wow, 100! Je hebt nu " + str(viewer[2]) + " GHubbies!", neatline[2]]
-                        else:
-                            viewer[2] += neatCommand[1]
-                            return ["MSG: Gefeliciteerd, je rolde " + str(value) + "! Je hebt nu " + str(viewer[2]) + " GHubbies!", neatline[2]]
-            return ["MSG: Even geduld, je kan zo pas gamblen!", neatline[2]]
+                        foundperson.points += neatCommand[1]
+                        return ["MSG: Gefeliciteerd, je rolde " + str(value) + "! Je hebt nu " + str(foundperson.points) + " GHubbies!", channel]
+
         return "Success"
         # TODO: check command in a list of commands, then return appropriate text
-        # TODO: bonus, bonusall, points, bet, give, duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht
+        # TODO: bonus, bonusall (game specific commands), points, bet/poll (outputs to text), give, duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht(maybe real)
+        # TODO: questions, gamble tracking
+        # TODO: Moderation
 
 
     #error catching
     else:
         print("Err: Command + " + neatline + " not recognized")
         return "Err: Command + " + neatline + " not recognized"
+
+
+def findperson(value, list):
+    for person in list:
+        if value == person.name:
+            return person
+    return "notFound"

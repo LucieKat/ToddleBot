@@ -13,6 +13,9 @@ def chat(sock, msg, channel):
     """
     sock.send("PRIVMSG {} :{}\r\n".format(channel, msg).encode("utf-8"))
 
+with open('log.txt', 'w') as f:
+    f.write("Channels = " + str(cfg.CHAN) + "\r\n")
+
 s = socket.socket()
 s.connect((cfg.HOST, cfg.PORT))
 s.send("CAP REQ : twitch.tv/commands twitch.tv/membership \r\n".encode())
@@ -29,9 +32,10 @@ while True:
         lastChecked = time()
         handler.handle("DISTRIBUTE")
     for line in response:
-        print(line)
-        neatline = converter.convert(line)
-        print(neatline)
+        with open('log.txt', 'a') as f:
+            f.write("IN = " + line)
+            neatline = converter.convert(line)
+            f.write("MID =" + str(neatline) + "\r\n")
         done = handler.handle(neatline)
         if done == "PING":
             s.send("PONG :tmi.twitch.tv \r\n".encode())
