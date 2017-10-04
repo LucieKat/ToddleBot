@@ -9,7 +9,8 @@ gHublist = [] # each person represented as ["name", #points]
 
 # neatline = (type, username, channel, [message])
 
-
+with open('log.txt', 'a') as f:
+    f.write("Ayy")
 
 
 def handle(neatline):
@@ -27,9 +28,12 @@ def handle(neatline):
         for viewer in currentViewers:
             viewer.addPoints(10)
         cfg.SAVE += 1
-        if cfg.SAVE == 5:
+        if cfg.SAVE == 1:
             cfg.SAVE = 0
-            # TODO: write away gHublist to .txt
+            with open('ghublist.txt', 'w') as f:
+                for viewer in currentViewers:
+                    f.write(str(viewer))
+            # TODO: Import viewerlist from file
         return "Success"
     elif neatline == "PING":
         return "PING"
@@ -37,7 +41,8 @@ def handle(neatline):
     # simple string handling
     [messageType, username, channel] = neatline[:3]
     if messageType == "MESSAGE":
-        pass #TODO: maybe log, probably language filter
+        with open('log.txt', 'a') as f:
+            f.write("MESSAGE = " + username + ": " + neatline[3] + " "+ channel + "\r\n")
         return "Success"
     elif messageType == "JOIN":
         foundperson = findperson(username, currentViewers)
