@@ -42,7 +42,7 @@ def handle(neatline):
     [messageType, username, channel] = neatline[:3]
     if messageType == "MESSAGE":
         with open('log.txt', 'a') as f:
-            f.write("MESSAGE = " + username + ": " + neatline[3] + " "+ channel + "\r\n")
+            f.write("MESSAGE = " + username + ": " + neatline[3] + " "+ channel + "\n")
         return "Success"
     elif messageType == "JOIN":
         foundperson = findperson(username, currentViewers)
@@ -59,37 +59,20 @@ def handle(neatline):
             foundperson.channel = channel
         return "Success"
     elif neatline[0] == "PART":
-        # TODO: Fix
+
         try:
-            currentViewers.remove(neatline[1])
+            foundperson = findperson(username, currentViewers)
+            currentViewers.remove(foundperson)
             return "Success"
         except:
             return "Err: Player " + username + " not found!"
     #the problem
     elif messageType == "COMMAND":
+        with open('log.txt', 'a') as f:
+            f.write("COMMAND = " + username + ": " + neatline[3] + " "+ channel + "\n")
         neatCommand = neatline[3].split(' ')
         if neatCommand[0] == "gamble":
-            try:
-                neatCommand[1] = int(neatCommand[1])
-            except:
-                return ["MSG: Wel een getal invullen grapjas", channel]
-            foundperson = findperson(username, currentViewers)
-            if foundperson == "notFound":
-                return ["MSG: Even geduld, je kan zo pas gamblen!", channel]
-            else:
-                if foundperson.points < neatCommand[1]:
-                    return ["MSG: Je hebt maar " + str(foundperson.points) + " GHubbies!", channel]
-                else:
-                    value = random.randint(1,100)
-                    if value < 66:
-                        foundperson.points -= neatCommand[1]
-                        return ["MSG: Helaas, je rolde " + str(value) + "! Je hebt nog " + str(foundperson.points) + " GHubbies!", channel]
-                    elif value == 100:
-                        foundperson.points += 2*neatCommand[1]
-                        return ["MSG: Wow, 100! Je hebt nu " + str(foundperson.points) + " GHubbies!", neatline[2]]
-                    else:
-                        foundperson.points += neatCommand[1]
-                        return ["MSG: Gefeliciteerd, je rolde " + str(value) + "! Je hebt nu " + str(foundperson.points) + " GHubbies!", channel]
+            return gamble(neatCommand, username, channel)
 
         return "Success"
         # TODO: check command in a list of commands, then return appropriate text
@@ -109,3 +92,25 @@ def findperson(value, list):
         if value == person.name:
             return person
     return "notFound"
+
+def gamble(neatCommand, username, channel):
+    try:
+        value = int(neatCommand[1])
+    except:
+        return ["MSG: Wel een getal invullen grapjas", channel]
+    person = findperson(username, currentViewers)
+    if person == "notFound":
+        return ["MSG: Even geduld, je kan zo pas gamblen!", channel]
+    elif person.points < value:
+        return ["MSG: Je hebt maar " + str(person.points) + " GHubbies!", channel]
+    else:
+        roll = random.randint(1,100)
+        if roll < 66:
+            person.points -= value
+            return ["MSG: Helaas, je rolde " + str(roll) + "! Je hebt nog " + str(person.points) + " GHubbies!", channel]
+        elif roll == 100:
+            person.points += 2*value
+            return ["MSG: Wow, 100! Je hebt nu " + str(person.points) + " GHubbies!", channel]
+        else:
+            person.points += value
+            return ["MSG: Gefeliciteerd, je rolde " + str(roll) + "! Je hebt nu " + str(person.points) + " GHubbies!", channel]
