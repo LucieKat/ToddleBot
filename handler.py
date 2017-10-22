@@ -6,9 +6,9 @@ from Person import personFromString
 currentViewers = [] # each person represented as Persoonclass
 saveCounter = 0
 gHublist = [] # each person represented as ["name", #points]
-
+modList = ["toddle_bot, mst_toddle, gamershuba, gamershubb, gamershubc"]
 # neatline = (type, username, channel, [message])
-
+giveawayList = []
 with open('log.txt', 'a') as f:
     f.write("Ayy")
 
@@ -73,10 +73,19 @@ def handle(neatline):
         neatCommand = neatline[3].split(' ')
         if neatCommand[0] == "gamble":
             return gamble(neatCommand, username, channel)
+        elif neatCommand[0] == "bonus":
+            return bonus(neatCommand, username, channel)
+        elif neatCommand[0] == "bonusall":
+            return bonusall(neatCommand, username, channel)
+        elif neatCommand[0] == "points":
+            return points(username, channel)
+        elif neatCommand[0] == "give":
+            return give(neatCommand, username, channel)
 
         return "Success"
         # TODO: check command in a list of commands, then return appropriate text
-        # TODO: bonus, bonusall (game specific commands), points, bet/poll (outputs to text), give, duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht(maybe real)
+        # TODO: bonusall (game specific commands),  bet/poll (outputs to text), duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht(maybe real)
+        # TODO: TEST: bonus, bonusall, points, give,
         # TODO: questions, gamble tracking
         # TODO: Moderation
 
@@ -114,3 +123,58 @@ def gamble(neatCommand, username, channel):
         else:
             person.points += value
             return ["MSG: Gefeliciteerd, je rolde " + str(roll) + "! Je hebt nu " + str(person.points) + " GHubbies!", channel]
+
+
+def bonus(neatCommand, username, channel):
+    gifted = neatCommand[1]
+    value = neatCommand[2]
+    if username in modList:
+        person = findperson(gifted, gHublist)
+        if person == "notFound":
+            return ["MSG: Ik kan " + gifted + " niet vinden!", channel]
+        elif person.points < value:
+            return ["MSG: " + username + " heeft nu " + str(person.points) + " GHubbies!", channel]
+    else:
+        return ["MSG: Nee, je bent geen mod."]
+
+def bonusall(neatCommand, username, channel):
+    value = neatCommand[1]
+    if username in modList:
+        for person in currentViewers:
+            if person.channel == channel:
+                person.points += value
+        return ["MSG: HET REGENT " + value + " GHUBBIES!", channel]
+    else:
+        return ["MSG: Nee, je bent geen mod."]
+
+def points(username, channel):
+    person = findperson(username, gHublist)
+    if person == "notFound":
+        return ["MSG: Het lijkt er op dat je nog geen GHubbies hebt!", channel]
+    else:
+        return ["MSG: Je hebt nu " + person.points + "GHubbies!", channel]
+
+def give(neatCommand, username, channel):
+    userReceiver = neatCommand[1]
+    try:
+        value = neatCommand[2]
+    except:
+        return ["MSG: Je hebt geen hoeveelheid ingevuld!", channel]
+    giver = findperson(username, gHublist)
+    if giver == "notFound":
+        return ["MSG: Het lijkt er op dat je nog geen GHubbies hebt!", channel]
+    else:
+        receiver = findperson(userReceiver, gHublist)
+        if receiver == "notFound":
+            return ["MSG: Het lijkt er op dat we je ontvanger niet kennen!", channel]
+        elif giver.points < value:
+            return ["MSG: Je hebt niet genoeg GHubbies!", channel]
+        else:
+            giver.points -= value
+            receiver.points += value
+            return ["MSG: " + username + " heeft " + value + " GHubbies aan " + receiver + "gegeven!", channel]
+
+def giveaway(neatCommand, username, channel):
+    if giveawayActive:
+        return ["MSG: Er is nu een giveaway bezig! "]
+
