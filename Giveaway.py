@@ -1,12 +1,23 @@
-class Person:
-    def __init__(self, name, channel, lastBet = 0, points = 10):
-        self.name = name
+from random import choice
+from time import time
+
+class Giveaway:
+    ID = 0
+    def __init__(self, channel, textLocation):
+        self.ID = Giveaway.ID
+        Giveaway.ID += 1
         self.channel = channel
-        self.lastBet = lastBet
-        self.points = points
+        self.personList = []
+        self.price = 100
+        self.startingTime = time()
+        self.textLocation = textLocation
 
-    def addPoints(self, change):
-        self.points += change
+    def addPerson(self, person):
+        self.personList.append(person)
 
-    def __str__(self):
-        return self.name + "\t" + self.channel + "\t" + str(self.lastBet) + "\t" + str(self.points) + "\n"
+    def end(self):
+        return choice(self.personList)
+
+    def getText(self):
+        with open(self.textLocation, 'r') as f:
+            return(f.readline())

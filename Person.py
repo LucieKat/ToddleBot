@@ -9,8 +9,7 @@ class Person:
         self.points += change
 
     def __str__(self):
-        return self.name + "\t" + self.channel + "\t" + str(self.lastBet) + "\t" + str(self.points) + "\n"
-
+        return self.name + "\t" + self.channel + "\t" + str(self.lastBet) + "\t" + str(self.points)
 
 def personFromString(inString):
     inString = inString.split('\t')

@@ -4,7 +4,6 @@ import socket
 import converter
 import handler
 
-lastChatted = time()
 def chat(sock, msg, channel):
     """
     Send a chat message to the server.
@@ -12,9 +11,11 @@ def chat(sock, msg, channel):
     sock -- the socket over which to send the message
     msg  -- the message to be sent
     """
-
+    # TODO: Create better timer interface in bot.py
     if time() - lastChatted > 60:
         sock.send("PRIVMSG #toddle_bot : PogChamp\r\n".encode())
+    with open('outlog.txt', 'a') as f:
+        f.write("OUT = " + msg + "\n")
     sock.send("PRIVMSG {} :{}\r\n".format(channel, msg).encode())
 
 with open('log.txt', 'w') as f:
@@ -29,9 +30,12 @@ s.send("PASS {}\r\n".format(cfg.PASS).encode("utf-8"))
 s.send("NICK {}\r\n".format(cfg.NICK).encode("utf-8"))
 for channel in cfg.CHAN:
     s.send("JOIN {}\r\n".format(channel).encode("utf-8"))
-chat(s, "HeyGuys", "#toddle_bot")
-lastChecked = time()
+
 lastChatted = time()
+lastChecked = time()
+chat(s, "HeyGuys", "#toddle_bot")
+
+
 while True:
     response = s.recv(4096).decode("utf-8").split("\n")
     if time() - lastChecked > 60:
@@ -47,9 +51,8 @@ while True:
         elif done == "Success" or done == "?":
             pass
         elif "MSG" in done[0]:
-            with open('outlog.txt', 'a') as f:
-                f.write("OUT = " + done[0][4:] + " " + done[1] + "\n")
             chat(s, done[0][4:], done[1])
+            lastChatted = time()
             pass # TODO: Betere error handling.
             #s.send(("PRIVMSG #toddle_bot :" + done + "\r\n").encode())
 
