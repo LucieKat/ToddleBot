@@ -14,6 +14,15 @@ with open('log.txt', 'a') as f:
     f.write("Ayy")
 
 
+def load():
+    with open("ghublist.txt", "r") as f:
+        line = f.readline()
+        while line != "":
+            gHublist.append(personFromString(line))
+            line = f.readline()
+
+
+
 def handle(neatline):
 
     # constant string handling
@@ -32,8 +41,8 @@ def handle(neatline):
         if cfg.SAVE == 1:
             cfg.SAVE = 0
             with open('ghublist.txt', 'w') as f:
-                for viewer in currentViewers:
-                    f.write(str(viewer))
+                for viewer in gHublist:
+                    f.write(str(viewer) + "\n")
             # TODO: Import viewerlist from file
         return "Success"
     elif neatline == "PING":
@@ -53,7 +62,6 @@ def handle(neatline):
                 newPerson = Person(username, channel)
                 currentViewers.append(newPerson)
                 gHublist.append(newPerson)
-                # TODO: adopt save to join multiple persons with same name
             else:
                 currentViewers.append(foundperson)
         else:
@@ -88,7 +96,6 @@ def handle(neatline):
         # TODO: bonusall (game specific commands),  bet/poll (outputs to text), duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht(maybe real)
         # TODO: TEST: bonus, bonusall, points, give,
         # TODO: questions, gamble tracking
-        # TODO: Moderation
 
 
     #error catching

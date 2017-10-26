@@ -21,6 +21,7 @@ lastChatted = time()
 lastChecked = time()
 chat("Empty", "HeyGuys", "#toddle_bot")
 
+handler.load()
 inFile = open('testin.txt', 'r')
 while True:
     response = inFile.readline()
@@ -38,8 +39,5 @@ while True:
     elif "MSG" in done[0]:
         chat("", done[0][4:], done[1])
         lastChatted = time()
-        pass # TODO: Betere error handling.
-        #s.send(("PRIVMSG #toddle_bot :" + done + "\r\n").encode())
-
     parts = line.split(":")
     sleep(1/cfg.RATE)
