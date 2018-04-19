@@ -1,4 +1,3 @@
-import cfg
 from time import sleep, time
 import converter
 import handler
@@ -21,7 +20,6 @@ lastChatted = time()
 lastChecked = time()
 chat("Empty", "HeyGuys", "#toddle_bot")
 
-handler.load()
 inFile = open('testin.txt', 'r')
 while True:
     response = inFile.readline()
@@ -34,10 +32,11 @@ while True:
         f.write("IN = " + line + '\r\n')
         neatline = converter.convert(line)
     done = handler.handle(neatline)
+    print(done)
     if done == "Success" or done == "?":
         pass
     elif "MSG" in done[0]:
         chat("", done[0][4:], done[1])
         lastChatted = time()
     parts = line.split(":")
-    sleep(1/cfg.RATE)
+    sleep(.1)

@@ -1,18 +1,13 @@
-import cfg
 import random
-from Person import Person
-from Person import personFromString
-from Giveaway import Giveaway
 
-currentViewers = [] # each person represented as Persoonclass
-saveCounter = 0
+import cfg
+from Person import Person, personFromString
+from Message import Join, Part, Message, Command
+
+
+current_viewers = [] # each person represented as Persoonclass
 gHublist = [] # each person represented as ["name", #points]
-modList = ["toddle_bot", "mst_toddle", "gamershuba", "gamershubb", "gamershubc"]
-# neatline = (type, username, channel, [message])
-giveawayList = []
-with open('log.txt', 'a') as f:
-    f.write("Ayy")
-
+MOD_LIST = ["toddle_bot", "mst_toddle"] #TODO: Verplaats dit naar een logischer locatie.
 
 def load():
     with open("ghublist.txt", "r") as f:
@@ -22,195 +17,188 @@ def load():
             line = f.readline()
 
 
-
+# TODO: Import viewerlist from start text line
 def handle(neatline):
-
     # constant string handling
     if neatline == "?":
         return "?"
-    elif neatline == "DISTRIBUTE":
-        print("gHublist")
-        for person in gHublist:
-            print(person)
-        print("currentViewers")
-        for person in currentViewers:
-            print(person)
-        for viewer in currentViewers:
-            viewer.addPoints(10)
-        cfg.SAVE += 1
-        if cfg.SAVE == 1:
-            cfg.SAVE = 0
-            with open('ghublist.txt', 'w') as f:
-                for viewer in gHublist:
-                    f.write(str(viewer) + "\n")
-            # TODO: Import viewerlist from file
-        return "Success"
-    elif neatline == "PING":
+    # TODO: Handle this.
+    if neatline == "DISTRIBUTE":
+        return distribute()
+    if neatline == "PING":
         return "PING"
-
-    # simple string handling
-    [messageType, username, channel] = neatline[:3]
-    if messageType == "MESSAGE":
-        with open('log.txt', 'a') as f:
-            f.write("MESSAGE = " + username + ": " + neatline[3] + " "+ channel + "\n")
+    
+    
+    if isinstance(neatline, list):
+        channel = neatline[0].get_channel()
+        for join in neatline:
+            join.log()
+            username = join.get_username()
+            join_channel(username, channel)
         return "Success"
-    elif messageType == "JOIN":
-        foundperson = findperson(username, currentViewers)
-        if foundperson == "notFound":
-            foundperson = findperson(username, gHublist)
-            if foundperson == "notFound":
-                newPerson = Person(username, channel)
-                currentViewers.append(newPerson)
-                gHublist.append(newPerson)
-            else:
-                currentViewers.append(foundperson)
-        else:
-            foundperson.channel = channel
-        return "Success"
-    elif neatline[0] == "PART":
+    
+    username = neatline.get_username()
+    channel = neatline.get_channel()
+    neatline.log()
+    if isinstance(neatline, Join):
+        return join_channel(username, channel)
 
-        try:
-            foundperson = findperson(username, currentViewers)
-            currentViewers.remove(foundperson)
-            return "Success"
-        except:
-            return "Err: Player " + username + " not found!"
-    #the problem
-    elif messageType == "COMMAND":
-        with open('log.txt', 'a') as f:
-            f.write("COMMAND = " + username + ": " + neatline[3] + " "+ channel + "\n")
-        neatCommand = neatline[3].split(' ')
-        if neatCommand[0] == "gamble":
-            return gamble(neatCommand, username, channel)
-        elif neatCommand[0] == "bonus":
-            return bonus(neatCommand, username, channel)
-        elif neatCommand[0] == "bonusall":
-            return bonusall(neatCommand, username, channel)
-        elif neatCommand[0] == "points":
+    if isinstance(neatline, Part):
+        return part_channel(username, channel)
+
+    if isinstance(neatline, Command):
+        command = neatline.get_command()
+        message = neatline.get_message()
+        if command == "gamble":
+            return gamble(message, username, channel)
+        if command == "bonus":
+            return bonus(message, username, channel)
+        if command == "bonusall":
+            return bonusall(message, username, channel)
+        if command == "points" or command.lower() == cfg.CURRENCY:
             return points(username, channel)
-        elif neatCommand[0] == "give":
-            return give(neatCommand, username, channel)
+        if command == "give":
+            return give(message, username, channel)
+        #default case:
+        print("Err: Command + " + command + " not recognized")
+        return "Err: Command + " + command + " not recognized"
 
-        return "Success"
-        # TODO: check command in a list of commands, then return appropriate text
         # TODO: bonusall (game specific commands),  bet/poll (outputs to text), duel, giveaway, lief (nonary, unary), nietlief, about, ranking, commands, speurtocht(maybe real)
-        # TODO: TEST: bonus, bonusall, points, give,
         # TODO: questions, gamble tracking
 
+    if isinstance(neatline, Message):
+        return "Success"
 
-    #error catching
-    else:
-        print("Err: Command + " + neatline + " not recognized")
-        return "Err: Command + " + neatline + " not recognized"
+    return "?"
 
+def distribute():
+    for viewer in current_viewers:
+        viewer.addPoints(10)
+    cfg.SAVE += 1
+    if cfg.SAVE == 1:
+        cfg.SAVE = 0
+        with open('ghublist.txt', 'w') as f:
+            for viewer in gHublist:
+                f.write(str(viewer) + "\n")
+    return "Success"
 
-def findperson(value, list):
-    for person in list:
+def findperson(value, personlist):
+    for person in personlist:
         if value == person.name:
             return person
     return "notFound"
 
-def gamble(neatCommand, username, channel):
+def gamble(message, username, channel):
+    line = message.split(" ", 1)
     try:
-        value = int(neatCommand[1])
-    except:
-        return ["MSG: Wel een getal invullen grapjas", channel]
-    person = findperson(username, currentViewers)
+        value = int(line[0])
+    except ValueError:
+        return ["MSG: Wel een getal invullen, grapjas", channel]
+    if value < 1:
+        return ["MSG: Wel een getal invullen, grapjas", channel]
+    person = findperson(username, current_viewers)
     if person == "notFound":
-        return ["MSG: Even geduld, je kan zo pas gamblen!", channel]
-    elif person.points < value:
-        return ["MSG: Je hebt maar " + str(person.points) + " GHubbies!", channel]
-    else:
-        roll = random.randint(1,100)
-        if roll < 66:
-            person.points -= value
-            return ["MSG: Helaas, " + username + ", je rolde " + str(roll) + "! Je hebt nog " + str(person.points) + " GHubbies!", channel]
-        elif roll == 100:
-            person.points += 2*value
-            return ["MSG: Wow, " + username + ", 100! Je hebt nu " + str(person.points) + " GHubbies!", channel]
-        else:
-            person.points += value
-            return ["MSG: Gefeliciteerd, " + username + ", je rolde " + str(roll) + "! Je hebt nu " + str(person.points) + " GHubbies!", channel]
+        join_channel(username, channel)
+        bonus(username + " 10", "toddle_bot", channel)
+        return(gamble(message, username, channel))
+    if person.points < value:
+        return ["MSG: Je hebt maar {} {}!"
+                .format(person.points, cfg.CURRENCY), channel]
+    roll = random.randint(1, 100)
+    if roll < 60:
+        person.points -= value
+        return ["MSG: Helaas, {}, je rolde {}! Je hebt nog {} {}!"
+                .format(username, roll, person.points, cfg.CURRENCY), channel]
+    if roll == 100:
+        person.points += 2*value
+        return ["MSG: Wow, {}, 100! Je hebt nu {} {}!"
+                .format(username, person.points, cfg.CURRENCY), channel]
+    person.points += value
+    return ["MSG: Gefeliciteerd, {}, je rolde {}! Je hebt nu {} {}!"
+            .format(username, roll, person.points, cfg.CURRENCY), channel]
 
+def bonus(message, username, channel):
+    line = message.split(" ")
 
-def bonus(neatCommand, username, channel):
-    gifted = neatCommand[1]
+    gifted = line[0]
     try:
-        value = int(neatCommand[2])
+        value = int(line[1])
     except IndexError:
         value = 100
-    if username in modList:
+    if username in MOD_LIST:
         person = findperson(gifted, gHublist)
         if person == "notFound":
-            return ["MSG: Ik kan " + gifted + " niet vinden!", channel]
-        else:
-            person.points += value
-            return ["MSG: " + person.name + " heeft nu " + str(person.points) + " GHubbies!", channel]
-    else:
-        print(username)
-        return ["MSG: Nee, je bent geen mod.", channel]
+            join_channel(username, channel)
+            return bonus(message, username, channel)
+        person.points += value
+        return ["MSG: {p.name} heeft nu {p.points} {}!"
+                .format(cfg.CURRENCY, p = person), channel]
+    return ["MSG: Nee, je bent geen mod.", channel]
 
-def bonusall(neatCommand, username, channel):
+def bonusall(message, username, channel):
     try:
-        value = int(neatCommand[1])
+        line = message.split(" ", 1)
+        value = int(line[0])
     except IndexError:
         value = 100
-    if username in modList:
-        for person in currentViewers:
+    if username in MOD_LIST:
+        for person in current_viewers:
             if person.channel == channel:
                 person.points += value
-        return ["MSG: HET REGENT " + str(value) + " GHUBBIES!", channel]
-    else:
-        return ["MSG: Nee, je bent geen mod.", channel]
+        return ["MSG: HET REGENT {} {}!"
+                .format(value, cfg.CURRENCY).upper(), channel]
+    return ["MSG: Nee, je bent geen mod.", channel]
 
 def points(username, channel):
     person = findperson(username, gHublist)
     if person == "notFound":
-        return ["MSG: Het lijkt er op dat je nog geen GHubbies hebt!", channel]
-    else:
-        return ["MSG: Je hebt nu " + person.points + "GHubbies!", channel]
+        join_channel(username, channel)
+        return points(username, channel)
+    return ["MSG: Je hebt nu {} {}!"
+            .format(person.points, cfg.CURRENCY), channel]
 
-def give(neatCommand, username, channel):
-    userReceiver = neatCommand[1]
+def give(message, username, channel):
+    line = message.split(" ", 1)
+    name = line[0]
     try:
-        value = int(neatCommand[2])
-    except:
+        value = int(line[1])
+    except ValueError:
         return ["MSG: Je hebt geen hoeveelheid ingevuld!", channel]
     giver = findperson(username, gHublist)
     if giver == "notFound":
-        return ["MSG: Het lijkt er op dat je nog geen GHubbies hebt!", channel]
-    else:
-        receiver = findperson(userReceiver, gHublist)
-        if receiver == "notFound":
-            return ["MSG: Het lijkt er op dat we je ontvanger niet kennen!", channel]
-        elif value <= 0:
-            return ["MSG: Goede poging, maar nee.", channel]
-        elif giver.points < value:
-            return ["MSG: Je hebt niet genoeg GHubbies!", channel]
+        join_channel(username, channel)
+        return give(message, username, channel)
+    receiver = findperson(name, gHublist)
+    if receiver == "notFound":
+        return ["MSG: Het lijkt er op dat we \"{}\" niet kennen!"
+                .format(name), channel]
+    if value <= 0:
+        return ["MSG: Goede poging, maar nee.", channel]
+    if giver.points < value:
+        return ["MSG: Je hebt niet genoeg {}!"
+                .format(cfg.CURRENCY), channel]
+    giver.points -= value
+    receiver.points += value
+    return ["MSG: {} heeft {} {} aan {} gegeven!"
+            .format(username, value, cfg.CURRENCY, receiver.name), channel]
+    
+def join_channel(username, channel):
+    foundperson = findperson(username, current_viewers)
+    if foundperson == "notFound":
+        foundperson = findperson(username, gHublist)
+        if foundperson == "notFound":
+            newperson = Person(username, channel)
+            current_viewers.append(newperson)
+            gHublist.append(newperson)
         else:
-            giver.points -= value
-            receiver.points += value
-            return ["MSG: " + username + " heeft " + str(value) + " GHubbies aan " + receiver.name + " gegeven!", channel]
-
-def giveaway(neatCommand, username, channel):
-    for giveaway in giveawayList:
-        if giveaway.channel == channel:
-            return ["MSG: " + giveaway.getText()]
-    if username in modList:
-        location = neatCommand[1]
-        try:
-            channel = neatCommand[2]
-            try:
-                duration = neatCommand[3]
-            except IndexError:
-                duration = 3600
-        except IndexError:
-            pass
-        giveaway = Giveaway(channel, location)
-        giveawayList.append(giveaway)
-        return ["ACT: Giveaway " + str(giveaway.ID) + ' ' + str(giveaway.startingTime) + ' ' + str(giveaway.duration)]
-        # TODO: Make bot responsive to ACT, in the right way, too.
-        # TODO: Make ticket purchase + giveaway end work
+            current_viewers.append(foundperson)
     else:
-        return ["MSG: Er is op het moment geen giveaway bezig!", channel]
+        foundperson.channel = channel
+    return "Success"
 
+def part_channel(username, _):
+    foundperson = findperson(username, current_viewers)
+    if foundperson == "notFound":
+        return "Err: Player " + username + " not found!"
+    current_viewers.remove(foundperson)
+    return "Success"
